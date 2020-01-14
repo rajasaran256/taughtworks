@@ -1,0 +1,46 @@
+apiVersion: v1
+data:
+  APP_PORT: "80"
+kind: ConfigMap
+metadata:
+  name: quote-config
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quote-service
+  labels:
+    app: quote
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    app: quote
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quote-deployment
+spec:
+  selector:
+    matchLabels:
+      app: quote
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: quote
+    spec:
+      containers:
+      - name: quote-pod
+        image: gcr.io/vocal-tempo-259712/quotes:v1
+        env:
+          - name: APP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: quote-config
+                key: APP_PORT
+        ports:
+        - containerPort: 80

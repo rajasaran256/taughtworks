@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: front-end-secret
+data:
+  NEWSFEED_SERVICE_TOKEN: VDEmZVdiWVhOV0cxdzFeWUdLRFB4QVdKQF5ldF4ma1g=
+---
+apiVersion: v1
+data:
+  APP_PORT: "80"
+  STATIC_URL: "http://localhost:8000"
+  QUOTE_SERVICE_URL: "http://quote-service"
+  NEWSFEED_SERVICE_URL: "http://news-config"
+kind: ConfigMap
+metadata:
+  name: front-config
+  namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-service
+  labels:
+    app: front
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    app: front
+  type: "LoadBalancer"
+  loadBalancerIP: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-deployment
+spec:
+  selector:
+    matchLabels:
+      app: front
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: front
+    spec:
+      containers:
+      - name: front-pod
+        image: gcr.io/vocal-tempo-259712/front:v1
+        env:
+          - name: APP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: front-config
+                key: APP_PORT
+          - name: STATIC_URL
+            valueFrom:
+              configMapKeyRef:
+                name: front-config
+                key: STATIC_URL
+          - name: QUOTE_SERVICE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: front-config
+                key: QUOTE_SERVICE_URL
+          - name: NEWSFEED_SERVICE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: front-config
+                key: NEWSFEED_SERVICE_URL
+          - name: NEWSFEED_SERVICE_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: front-end-secret
+                key: NEWSFEED_SERVICE_TOKEN
+        ports:
+        - containerPort: 80
